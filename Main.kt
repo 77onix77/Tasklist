@@ -1,9 +1,18 @@
 package tasklist
 
 import kotlinx.datetime.*
-data class Task(val priority: String, val date: String, val time: String, val task: String) {
+
+data class Task(var priority: String, var date: String, var time: String, var task: String) {
     override fun toString(): String {
-        return "$date $time ${priority.uppercase()}\n" + task
+        return "$date $time ${priority.uppercase()} ${tag()}\n" + task
+    }
+    private fun tag(): String {
+        val tag = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+0")).date.daysUntil(date.toLocalDate())
+        return when {
+            tag == 0 -> "T"
+            tag > 0 -> "I"
+            else -> "O"
+        }
     }
 }
 
@@ -11,10 +20,12 @@ fun main() {
     val list = mutableListOf<Task>()
 
     while (true) {
-        println("Input an action (add, print, end):")
+        println("Input an action (add, print, edit, delete, end):")
         when (readln()) {
             "add" -> add(list)
             "print" -> printList(list)
+            "edit" -> edit(list)
+            "delete" -> delete(list)
             "end" -> {
                 println("Tasklist exiting!")
                 return
@@ -24,31 +35,107 @@ fun main() {
     }
 }
 
+fun delete(list: MutableList<Task>) {
+    if (list.isEmpty()) {
+        println("No tasks have been input")
+        return
+    }
+    printList(list)
+    while (true){
+        println("Input the task number (1-${list.size}):")
+        val num = readln()
+        if (Regex("\\d+").matches(num) && num.toInt() in 1..list.size) {
+            list.removeAt(num.toInt() - 1)
+            println("The task is deleted")
+            break
+        } else println("Invalid task number")
+    }
+}
+
+fun edit(list: MutableList<Task>) {
+    if (list.isEmpty()) {
+        println("No tasks have been input")
+        return
+    }
+    printList(list)
+    val number: Int
+    while (true){
+        println("Input the task number (1-${list.size}):")
+        val num = readln()
+        if (Regex("\\d+").matches(num) && num.toInt() in 1..list.size) {
+            number = num.toInt()
+            break
+        } else println("Invalid task number")
+    }
+
+    while (true) {
+        println("Input a field to edit (priority, date, time, task):")
+        when(readln()) {
+            "priority" -> {
+                list[number - 1].priority = priority()
+                println("The task is changed")
+                break
+            }
+            "date" -> {
+                list[number - 1].date = date()
+                println("The task is changed")
+                break
+            }
+            "time" -> {
+                list[number - 1].time = time()
+                println("The task is changed")
+                break
+            }
+            "task" -> {
+                val task = task()
+                if (task.isEmpty()) {
+                    println("The task is blank")
+                    return
+                }
+                list[number - 1].task = task
+                println("The task is changed")
+                break
+            }
+            else -> println("Invalid field")
+        }
+    }
+
+}
+
+fun task(): String {
+    println("Input a new task (enter a blank line to end):")
+    val str1 = readln().trim()
+    var task  = ""
+    if (str1.isEmpty()) return ""
+    else task += "   $str1"
+    while (true) {
+        val str = readln().trim()
+        if (str.isEmpty()) break
+        else task += "\n   $str"
+    }
+    return task
+}
+
 fun add(list: MutableList<Task>) {
+    val priority = priority()
+    val date = date()
+    val time = time()
+    val task  = task()
+    if (task.isEmpty()) {
+        println("The task is blank")
+        return
+    }
+    list += Task(priority, date, time, task)
+}
+
+fun priority(): String {
     val pr = listOf("C", "H", "N", "L")
     var priority = ""
     while (priority.uppercase() !in pr) {
         println("Input the task priority (C, H, N, L):")
         priority = readln()
     }
-
-    val date = date()
-
-    val time = time()
-
-    println("Input a new task (enter a blank line to end):")
-    val str1 = readln().trim()
-    var task  = ""
-    if (str1.isEmpty()) {
-        println("The task is blank")
-        return
-    } else task += "   $str1"
-    while (true) {
-        val str = readln().trim()
-        if (str.isEmpty()) break
-        else task += "\n   $str"
-    }
-    list += Task(priority, date, time, task)
+    return priority
 }
 
 fun time(): String {
@@ -98,7 +185,10 @@ fun date(): String {
 }
 
 fun printList(list: List<Task>) {
-    if (list.isEmpty()) println("No tasks have been input")
+    if (list.isEmpty()) {
+        println("No tasks have been input")
+        return
+    }
 
     if (list.size < 10) {
         for (i in 1..list.size) {
@@ -116,5 +206,3 @@ fun printList(list: List<Task>) {
         }
     }
 }
-
-
