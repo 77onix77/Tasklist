@@ -3,15 +3,23 @@ package tasklist
 import kotlinx.datetime.*
 
 data class Task(var priority: String, var date: String, var time: String, var task: String) {
-    override fun toString(): String {
-        return "$date $time ${priority.uppercase()} ${tag()}\n" + task
-    }
-    private fun tag(): String {
+
+    fun tag(): String {
         val tag = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+0")).date.daysUntil(date.toLocalDate())
         return when {
-            tag == 0 -> "T"
-            tag > 0 -> "I"
-            else -> "O"
+            tag == 0 -> "\u001B[103m \u001B[0m"
+            tag > 0 -> "\u001B[102m \u001B[0m"
+            else -> "\u001B[101m \u001B[0m"
+        }
+    }
+
+    fun prior(): String {
+        return when (priority) {
+            "C" -> "\u001B[101m \u001B[0m"
+            "H" -> "\u001B[103m \u001B[0m"
+            "N" -> "\u001B[102m \u001B[0m"
+            "L" -> "\u001B[104m \u001B[0m"
+            else -> ""
         }
     }
 }
@@ -107,11 +115,11 @@ fun task(): String {
     val str1 = readln().trim()
     var task  = ""
     if (str1.isEmpty()) return ""
-    else task += "   $str1"
+    else task += str1
     while (true) {
         val str = readln().trim()
         if (str.isEmpty()) break
-        else task += "\n   $str"
+        else task += "\n$str"
     }
     return task
 }
@@ -135,7 +143,7 @@ fun priority(): String {
         println("Input the task priority (C, H, N, L):")
         priority = readln()
     }
-    return priority
+    return priority.uppercase()
 }
 
 fun time(): String {
@@ -184,25 +192,53 @@ fun date(): String {
     return date
 }
 
+fun taskToLust(string: String): List<String> {
+    val listTask = mutableListOf<String>()
+    var i = 0
+    var str = ""
+    for (ch in string){
+        if (ch == '\n') {
+            listTask += str
+            i = 0
+            str = ""
+        } else if (i == 44) {
+            listTask += str
+            i = 1
+            str = ch.toString()
+        } else {
+            str += ch
+            i++
+        }
+    }
+    listTask += str
+    if (listTask.size > 1) {
+        for (j in 1..listTask.lastIndex) {
+            listTask[j] = "|    |            |       |   |   |${listTask[j]}${" ".repeat(44 - listTask[j].length)}|"
+        }
+    }
+    return listTask
+}
+
 fun printList(list: List<Task>) {
     if (list.isEmpty()) {
         println("No tasks have been input")
         return
     }
 
-    if (list.size < 10) {
-        for (i in 1..list.size) {
-            println("$i  ${list[i - 1]}")
-            println()
+
+
+    println("+----+------------+-------+---+---+--------------------------------------------+\n" +
+            "| N  |    Date    | Time  | P | D |                   Task                     |\n" +
+            "+----+------------+-------+---+---+--------------------------------------------+")
+
+    for (i in 1..list.size) {
+        val listTask = taskToLust(list[i-1].task)
+        println("| $i  | ${list[i - 1].date} | ${list[i - 1].time} | ${list[i - 1].prior()} | ${list[i - 1].tag()} |${listTask[0]}${" ".repeat(44 - listTask[0].length)}|")
+        if (listTask.size > 1) {
+            for (j in 1..listTask.lastIndex) {
+                println(listTask[j])
+            }
         }
-    } else {
-        for (i in 1..9) {
-            println("$i  ${list[i - 1]}")
-            println()
-        }
-        for (i in 10..list.size) {
-            println("$i ${list[i - 1]}")
-            println()
-        }
+        println("+----+------------+-------+---+---+--------------------------------------------+")
     }
 }
