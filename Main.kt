@@ -1,6 +1,9 @@
 package tasklist
 
 import kotlinx.datetime.*
+import com.squareup.moshi.*
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.io.File
 
 data class Task(var priority: String, var date: String, var time: String, var task: String) {
 
@@ -25,7 +28,20 @@ data class Task(var priority: String, var date: String, var time: String, var ta
 }
 
 fun main() {
-    val list = mutableListOf<Task>()
+    val file = File("tasklist.json")
+    if (!file.exists()) file.writeText("")
+    val string = file.readText()
+
+    val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+    val types = Types.newParameterizedType(List::class.java, Task::class.java)
+    val taskAdapter = moshi.adapter<List<Task>>(types)
+
+    var list = mutableListOf<Task>()
+    if (string.isNotEmpty()) {
+        list = taskAdapter.fromJson(string)!!.toMutableList()
+    }
 
     while (true) {
         println("Input an action (add, print, edit, delete, end):")
@@ -35,6 +51,7 @@ fun main() {
             "edit" -> edit(list)
             "delete" -> delete(list)
             "end" -> {
+                file.writeText(taskAdapter.toJson(list))
                 println("Tasklist exiting!")
                 return
             }
